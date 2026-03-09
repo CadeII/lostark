@@ -247,7 +247,7 @@
 <body>
   <div class="container stack">
     <div>
-      <span class="badge">고속 계산 모드 · 큰 수량 대응</span>
+      <span class="badge">Cadell · 목재 쌀 빼먹</span>
       <h1>목재 최적 판매 계산기</h1>
       <p class="sub">
         보유 수량과 거래소 <strong>100개 단위 가격</strong>을 입력하면,
@@ -326,7 +326,6 @@
 
           <div id="status" class="status"></div>
           <div class="note">
-            큰 수량에서도 멈추지 않도록 계산 로직을 다시 만들었습니다.<br />
             거래소 판매는 모두 100개 단위로만 계산합니다. 거래소 수수료는 반영하지 않은 총액 기준입니다.
           </div>
         </section>
@@ -408,8 +407,7 @@
         </div>
 
         <div class="footer-note">
-          이 버전은 범용 LP 라이브러리 대신, 큰 수량에서도 빠르게 계산되도록
-          전용 동적 계획법으로 최적 판매 조합을 찾습니다.
+          목재 싹싹김
         </div>
       </section>
     </div>
@@ -821,7 +819,7 @@
         ]);
 
         el('results').hidden = false;
-        setStatus('계산 완료: 큰 수량에서도 빠르게 최적 판매 조합을 찾았습니다.', 'ok');
+        setStatus('계산 완료', 'ok');
       } catch (error) {
         setStatus(error?.message || '계산 중 오류가 발생했습니다.', 'error');
         el('results').hidden = true;
