@@ -3,109 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>목재 최적 판매 계산기</title>
-  <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/prod/solver.js"></script>
+  <title>목재 거래 최적화 계산기</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --panel-2: #1f2937;
-      --line: #334155;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --good: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
+      --bg: #f7f8fc;
+      --card: #ffffff;
+      --border: #dfe3eb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 16px;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: var(--bg);
       color: var(--text);
-      background: linear-gradient(180deg, #0b1220 0%, #111827 100%);
-      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
       padding: 24px;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
     h1 {
-      margin: 0 0 10px;
-      font-size: 32px;
-      line-height: 1.2;
+      margin: 0 0 8px;
+      font-size: 28px;
     }
 
-    .sub {
-      margin: 0 0 24px;
+    .subtitle {
       color: var(--muted);
-      line-height: 1.6;
+      margin-bottom: 24px;
     }
-
-    .panel {
-      background: rgba(17, 24, 39, 0.88);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(8px);
-    }
-
-    .stack { display: grid; gap: 18px; }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 
-    .input-grid {
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    .form-group {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 10px;
+      margin-bottom: 18px;
     }
 
-    .field {
+    .row {
       display: grid;
-      gap: 8px;
+      grid-template-columns: 1fr 160px;
+      gap: 10px;
+      align-items: center;
     }
 
-    .field label {
-      font-size: 14px;
-      color: var(--muted);
+    label {
       font-weight: 600;
     }
 
-    .field input {
+    input[type="number"] {
       width: 100%;
       padding: 12px 14px;
+      border: 1px solid var(--border);
       border-radius: 12px;
-      border: 1px solid var(--line);
-      background: #0b1220;
-      color: var(--text);
       font-size: 15px;
       outline: none;
     }
 
-    .field input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
     }
 
     .actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      align-items: center;
+      margin-top: 10px;
     }
 
     button {
-      border: 0;
+      border: none;
       border-radius: 12px;
       padding: 12px 18px;
       font-size: 15px;
@@ -113,306 +113,183 @@
       cursor: pointer;
     }
 
-    .primary {
-      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-      color: #082f49;
+    .btn-primary {
+      background: var(--primary);
+      color: white;
     }
 
-    .secondary {
-      background: #1e293b;
-      color: var(--text);
-      border: 1px solid var(--line);
+    .btn-primary:hover {
+      background: var(--primary-dark);
     }
 
-    .hint {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
     }
 
-    .cards {
+    .summary {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      margin-top: 16px;
     }
 
-    .card {
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px;
+    .summary-box {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: #fafbff;
     }
 
-    .card .k {
+    .summary-box .label {
       color: var(--muted);
       font-size: 13px;
-      margin-bottom: 8px;
-      font-weight: 700;
+      margin-bottom: 6px;
     }
 
-    .card .v {
-      font-size: 28px;
+    .summary-box .value {
+      font-size: 22px;
       font-weight: 800;
-      line-height: 1.2;
     }
 
-    .card.good .v { color: var(--good); }
-    .card.warn .v { color: var(--warn); }
-
-    .section-title {
-      margin: 0 0 12px;
-      font-size: 20px;
-    }
-
-    .list {
-      margin: 0;
-      padding-left: 20px;
-      line-height: 1.8;
-    }
-
-    .list.empty {
-      padding-left: 0;
-      list-style: none;
-      color: var(--muted);
-    }
+    .success { color: var(--success); }
+    .danger { color: var(--danger); }
+    .warning { color: var(--warning); }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 14px;
-      background: #0b1220;
-      border: 1px solid var(--line);
+      margin-top: 14px;
+      font-size: 14px;
     }
 
     th, td {
-      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 8px;
       text-align: left;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
+      vertical-align: top;
     }
 
     th {
-      background: #0f172a;
-      color: var(--muted);
-      font-weight: 700;
+      background: #f8fafc;
     }
-
-    tr:last-child td { border-bottom: 0; }
-
-    .status {
-      min-height: 24px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .status.error { color: var(--bad); }
-    .status.ok { color: var(--good); }
 
     .note {
-      margin-top: 8px;
+      margin-top: 14px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.6;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(56, 189, 248, 0.12);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      font-size: 12px;
-      font-weight: 700;
+    .section-title {
+      margin-top: 24px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 18px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #fcfcfd;
     }
 
     .footer-note {
-      margin-top: 18px;
-      color: var(--muted);
+      margin-top: 20px;
       font-size: 13px;
-      line-height: 1.7;
+      color: var(--muted);
     }
 
-    [hidden] { display: none !important; }
-
-    @media (max-width: 900px) {
-      .grid, .cards, .input-grid {
+    @media (max-width: 640px) {
+      .row {
         grid-template-columns: 1fr;
+      }
+
+      .wrap {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 24px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container stack">
-    <div>
-      <span class="badge">정수 교환 · 100개 판매 단위 최적화</span>
-      <h1>목재 최적 판매 계산기</h1>
-      <p class="sub">
-        보유 수량과 거래소 <strong>100개 단위 가격</strong>을 입력하면,
-        가능한 교환을 모두 고려해서 <strong>가장 높은 총 판매 금액</strong>을 계산합니다.
-        결과에는 <strong>교환 없이 바로 판매했을 때와 비교한 추가 이득</strong>도 함께 표시됩니다.
-      </p>
+  <div class="wrap">
+    <h1>목재 거래 최적화 계산기</h1>
+    <div class="subtitle">
+      보유 수량과 100개당 가격을 입력하면, 어떤 교환을 거쳐 판매해야 가장 높은 금액을 받을지 계산합니다.
     </div>
 
-    <div class="panel stack">
-      <div class="grid">
-        <section class="stack">
-          <div>
-            <h2 class="section-title">1. 보유 수량</h2>
-            <div class="input-grid">
-              <div class="field">
-                <label for="wood">목재 보유량</label>
-                <input id="wood" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="soft">부드러운 목재 보유량</label>
-                <input id="soft" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="tough">튼튼한 목재 보유량</label>
-                <input id="tough" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="abidos">아비도스 목재 보유량</label>
-                <input id="abidos" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="powder">초기 벌목의 가루 (선택, 기본 0)</label>
-                <input id="powder" type="number" min="0" step="1" value="0" />
-              </div>
-            </div>
+    <div class="grid">
+      <div class="card">
+        <h2>보유 수량</h2>
+        <div class="form-group">
+          <div class="row">
+            <label for="wood">목재</label>
+            <input type="number" id="wood" min="0" step="1" value="0" />
           </div>
+          <div class="row">
+            <label for="soft">부드러운 목재</label>
+            <input type="number" id="soft" min="0" step="1" value="0" />
+          </div>
+          <div class="row">
+            <label for="sturdy">튼튼한 목재</label>
+            <input type="number" id="sturdy" min="0" step="1" value="0" />
+          </div>
+          <div class="row">
+            <label for="abidos">아비도스 목재</label>
+            <input type="number" id="abidos" min="0" step="1" value="0" />
+          </div>
+        </div>
+      </div>
 
-          <div class="note">
-            교환 규칙<br />
-            - 튼튼한 목재 5 → 목재 50<br />
-            - 부드러운 목재 25 → 목재 50<br />
-            - 목재 100 → 벌목의 가루 80<br />
-            - 부드러운 목재 50 → 벌목의 가루 80<br />
-            - 벌목의 가루 100 → 부드러운 목재 50 / 튼튼한 목재 10 / 아비도스 목재 10
+      <div class="card">
+        <h2>거래소 가격 (100개당)</h2>
+        <div class="form-group">
+          <div class="row">
+            <label for="priceWood">목재 가격</label>
+            <input type="number" id="priceWood" min="0" step="1" value="0" />
           </div>
-        </section>
+          <div class="row">
+            <label for="priceSoft">부드러운 목재 가격</label>
+            <input type="number" id="priceSoft" min="0" step="1" value="0" />
+          </div>
+          <div class="row">
+            <label for="priceSturdy">튼튼한 목재 가격</label>
+            <input type="number" id="priceSturdy" min="0" step="1" value="0" />
+          </div>
+          <div class="row">
+            <label for="priceAbidos">아비도스 목재 가격</label>
+            <input type="number" id="priceAbidos" min="0" step="1" value="0" />
+          </div>
+        </div>
 
-        <section class="stack">
-          <div>
-            <h2 class="section-title">2. 100개당 거래소 가격</h2>
-            <div class="input-grid">
-              <div class="field">
-                <label for="priceWood">목재 가격</label>
-                <input id="priceWood" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="priceSoft">부드러운 목재 가격</label>
-                <input id="priceSoft" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="priceTough">튼튼한 목재 가격</label>
-                <input id="priceTough" type="number" min="0" step="1" value="0" />
-              </div>
-              <div class="field">
-                <label for="priceAbidos">아비도스 목재 가격</label>
-                <input id="priceAbidos" type="number" min="0" step="1" value="0" />
-              </div>
-            </div>
-          </div>
+        <div class="actions">
+          <button class="btn-primary" onclick="calculate()">최적 계산</button>
+          <button class="btn-secondary" onclick="fillExample()">예시 입력</button>
+          <button class="btn-secondary" onclick="resetForm()">초기화</button>
+        </div>
 
-          <div class="actions">
-            <button class="primary" id="calcBtn">최적 판매 계산</button>
-            <button class="secondary" id="fillDemoBtn">예시 값 채우기</button>
-            <button class="secondary" id="resetBtn">초기화</button>
-          </div>
-
-          <div id="status" class="status"></div>
-          <div class="note">
-            거래소 판매는 모두 100개 단위로만 계산합니다. 남는 재료와 남는 벌목의 가루는 결과 표에 따로 표시됩니다.<br />
-            거래소 수수료는 반영하지 않은 총액 기준입니다.
-          </div>
-        </section>
+        <div class="note">
+          ※ 판매는 각 자원을 <strong>100개 단위</strong>로만 진행합니다.<br>
+          ※ 벌목의 가루는 판매하지 않고 교환용으로만 사용합니다.
+        </div>
       </div>
     </div>
 
-    <div id="results" class="stack" hidden>
-      <div class="cards">
-        <div class="card warn">
-          <div class="k">교환 없이 바로 판매</div>
-          <div class="v" id="directRevenue">0</div>
-        </div>
-        <div class="card">
-          <div class="k">최적 교환 후 판매</div>
-          <div class="v" id="optimalRevenue">0</div>
-        </div>
-        <div class="card good">
-          <div class="k">추가 이득</div>
-          <div class="v" id="extraProfit">0</div>
-        </div>
-      </div>
+    <div id="resultArea" style="margin-top: 24px;">
+      <div class="empty">아직 계산하지 않았습니다.</div>
+    </div>
 
-      <div class="grid">
-        <section class="panel stack">
-          <div>
-            <h2 class="section-title">최종 판매 전략</h2>
-            <ul id="strategyList" class="list"></ul>
-          </div>
-
-          <div>
-            <h2 class="section-title">교환 내역</h2>
-            <ul id="exchangeList" class="list"></ul>
-          </div>
-        </section>
-
-        <section class="panel stack">
-          <div>
-            <h2 class="section-title">판매 요약</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>재료</th>
-                  <th>판매 수량</th>
-                  <th>100개당 가격</th>
-                  <th>판매 금액</th>
-                </tr>
-              </thead>
-              <tbody id="saleTableBody"></tbody>
-            </table>
-          </div>
-
-          <div>
-            <h2 class="section-title">비교표</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>구분</th>
-                  <th>금액</th>
-                </tr>
-              </thead>
-              <tbody id="compareTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <section class="panel stack">
-        <div>
-          <h2 class="section-title">남은 재료</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>재료</th>
-                <th>최종 잔량</th>
-              </tr>
-            </thead>
-            <tbody id="remainTableBody"></tbody>
-          </table>
-        </div>
-
-        <div class="footer-note">
-          이 계산기는 교환 횟수와 판매 묶음 수를 모두 <strong>정수</strong>로 두고 최적값을 찾습니다.
-          즉, “5개 교환”, “25개 교환”, “100개 판매” 같은 실제 가능한 단위만 사용합니다.
-        </div>
-      </section>
+    <div class="footer-note">
+      교환 규칙:
+      튼튼한 목재 5 → 목재 50,
+      부드러운 목재 25 → 목재 50,
+      목재 100 → 벌목의 가루 80,
+      부드러운 목재 50 → 벌목의 가루 80,
+      벌목의 가루 100 → 부드러운 목재 50 / 튼튼한 목재 10 / 아비도스 목재 10
     </div>
   </div>
 
@@ -420,41 +297,41 @@
     function num(id) {
       return Math.max(0, Math.floor(Number(document.getElementById(id).value) || 0));
     }
-  
+
     function fmt(n) {
       return Math.round(n).toLocaleString("ko-KR");
     }
-  
+
     function fillExample() {
-      document.getElementById("wood").value = 1350;
-      document.getElementById("soft").value = 820;
-      document.getElementById("sturdy").value = 265;
-      document.getElementById("abidos").value = 140;
-  
+      document.getElementById("wood").value = 120000;
+      document.getElementById("soft").value = 85000;
+      document.getElementById("sturdy").value = 32000;
+      document.getElementById("abidos").value = 14000;
+
       document.getElementById("priceWood").value = 900;
       document.getElementById("priceSoft").value = 2400;
       document.getElementById("priceSturdy").value = 6800;
       document.getElementById("priceAbidos").value = 12000;
     }
-  
+
     function resetForm() {
       ["wood","soft","sturdy","abidos","priceWood","priceSoft","priceSturdy","priceAbidos"]
         .forEach(id => document.getElementById(id).value = 0);
       document.getElementById("resultArea").innerHTML = '<div class="empty">아직 계산하지 않았습니다.</div>';
     }
-  
+
     function directSaleRevenue(w, s, t, a, prices) {
       const sellWoodBundles = Math.floor(w / 100);
       const sellSoftBundles = Math.floor(s / 100);
       const sellSturdyBundles = Math.floor(t / 100);
       const sellAbidosBundles = Math.floor(a / 100);
-  
+
       const revenue =
         sellWoodBundles * prices.wood +
         sellSoftBundles * prices.soft +
         sellSturdyBundles * prices.sturdy +
         sellAbidosBundles * prices.abidos;
-  
+
       return {
         revenue,
         sellWood: sellWoodBundles * 100,
@@ -467,25 +344,67 @@
         leftAbidos: a - sellAbidosBundles * 100
       };
     }
-  
-    /*
-      =========================================================
-      고속 최적화 핵심 아이디어
-      ---------------------------------------------------------
-      1) 완전탐색 제거
-      2) 각 자원을 "목재 환산 가치"와 "가루 경유 가치"로 비교
-      3) 대량 구간은 한 번에 처리
-      4) 마지막 경계 구간만 세밀 보정
-      =========================================================
-    */
-  
+
+    function evaluateSmall(localW, localS, localT, localA, localPowder, prices, localPlan) {
+      const powderBundles = Math.floor(localPowder / 100);
+
+      let bestLocal = null;
+
+      for (let pSoft = 0; pSoft <= powderBundles; pSoft++) {
+        for (let pSturdy = 0; pSturdy <= powderBundles - pSoft; pSturdy++) {
+          const pAbidos = powderBundles - pSoft - pSturdy;
+
+          const finalS = localS + pSoft * 50;
+          const finalT = localT + pSturdy * 10;
+          const finalA = localA + pAbidos * 10;
+
+          const soldW = Math.floor(localW / 100) * 100;
+          const soldS = Math.floor(finalS / 100) * 100;
+          const soldT = Math.floor(finalT / 100) * 100;
+          const soldA = Math.floor(finalA / 100) * 100;
+
+          const revenue =
+            (soldW / 100) * prices.wood +
+            (soldS / 100) * prices.soft +
+            (soldT / 100) * prices.sturdy +
+            (soldA / 100) * prices.abidos;
+
+          if (!bestLocal || revenue > bestLocal.revenue) {
+            bestLocal = {
+              revenue,
+              sell: {
+                wood: soldW,
+                soft: soldS,
+                sturdy: soldT,
+                abidos: soldA
+              },
+              remain: {
+                wood: localW - soldW,
+                soft: finalS - soldS,
+                sturdy: finalT - soldT,
+                abidos: finalA - soldA,
+                powder: localPowder - powderBundles * 100
+              },
+              plan: {
+                ...localPlan,
+                powderToSoft: pSoft,
+                powderToSturdy: pSturdy,
+                powderToAbidos: pAbidos
+              }
+            };
+          }
+        }
+      }
+
+      return bestLocal;
+    }
+
     function solveFastOptimized(init, prices) {
-      // 복사
       let W = init.wood;
       let S = init.soft;
       let T = init.sturdy;
       let A = init.abidos;
-  
+
       const plan = {
         sturdyToWood: 0,
         softToWood: 0,
@@ -495,99 +414,63 @@
         powderToSturdy: 0,
         powderToAbidos: 0
       };
-  
-      /*
-        -------------------------------------------
-        1) 단위당 "대략적인 가치" 계산
-        -------------------------------------------
-        판매는 100개 단위라서 실제 계산은 번들 기준이지만,
-        bulk 방향을 빠르게 정하기 위해 단위당 가치를 사용.
-      */
+
       const vWoodPer1 = prices.wood / 100;
       const vSoftPer1 = prices.soft / 100;
       const vSturdyPer1 = prices.sturdy / 100;
       const vAbidosPer1 = prices.abidos / 100;
-  
-      // 교환 경로 기준 기대 가치 비교
-      // 100 목재 -> 80 가루
-      // 100 가루 -> 50 부드러운 / 10 튼튼 / 10 아비도스
-      // 따라서:
-      // 100 목재 -> 80 가루 -> 40 부드러운 / 8 튼튼 / 8 아비도스
+
       const woodToSoftValue = 40 * vSoftPer1;
       const woodToSturdyValue = 8 * vSturdyPer1;
       const woodToAbidosValue = 8 * vAbidosPer1;
-      const bestWoodPowderPathValue = Math.max(woodToSoftValue, woodToSturdyValue, woodToAbidosValue);
-  
-      // 50 부드러운 -> 80 가루
-      // 80 가루 -> 직접 완전교환 안됨. bulk 판단용 기대값만 사용
-      // 50 부드러운의 직접 판매가치는 0.5 * prices.soft
-      const softHalfDirectValue = prices.soft / 2;
-  
-      // 5 튼튼 -> 50 목재
-      // 5 튼튼 직접 판매 가치 = prices.sturdy / 20
+      const bestWoodPowderPathValue = Math.max(
+        woodToSoftValue,
+        woodToSturdyValue,
+        woodToAbidosValue
+      );
+
       const sturdy5DirectValue = prices.sturdy / 20;
       const sturdy5ToWoodPathValue = 50 * vWoodPer1;
       const sturdy5ToWoodPowderPathValue = 0.5 * bestWoodPowderPathValue;
-  
-      /*
-        -------------------------------------------
-        2) 튼튼한 목재 bulk 방향 결정
-        -------------------------------------------
-        5개 단위 기준으로 비교
-      */
-      if (sturdy5ToWoodPathValue > sturdy5DirectValue || sturdy5ToWoodPowderPathValue > sturdy5DirectValue) {
+
+      let powderFromSoftBulk = 0;
+
+      if (
+        sturdy5ToWoodPathValue > sturdy5DirectValue ||
+        sturdy5ToWoodPowderPathValue > sturdy5DirectValue
+      ) {
         const bulkT = Math.floor(T / 5) * 5;
         const convertCount = bulkT / 5;
         T -= bulkT;
         W += convertCount * 50;
         plan.sturdyToWood += convertCount;
       }
-  
-      /*
-        -------------------------------------------
-        3) 부드러운 목재 bulk 방향 결정
-        -------------------------------------------
-        25개 -> 50목재
-        50개 -> 80가루
-        100개 직접판매
-      */
+
       const soft25ToWoodValue = 50 * vWoodPer1;
       const soft50ToPowderValue = Math.max(
-        50 * 0.8 * 0.5 * vSoftPer1,  // 근사
+        50 * 0.8 * 0.5 * vSoftPer1,
         50 * 0.8 * 0.1 * vSturdyPer1,
         50 * 0.8 * 0.1 * vAbidosPer1
       );
-  
+
       if (soft25ToWoodValue > prices.soft / 4 || soft50ToPowderValue > prices.soft / 2) {
-        // 50개 단위로 가루가 더 좋으면 먼저 50개 단위 처리
         if (soft50ToPowderValue >= soft25ToWoodValue) {
           const bulkS50 = Math.floor(S / 50) * 50;
           const count50 = bulkS50 / 50;
           S -= bulkS50;
           plan.softToPowder += count50;
-          // 가루는 뒤에서 일괄 계산
-          W += 0; // nothing
-          var powderFromSoftBulk = count50 * 80;
+          powderFromSoftBulk += count50 * 80;
         } else {
           const bulkS25 = Math.floor(S / 25) * 25;
           const count25 = bulkS25 / 25;
           S -= bulkS25;
           W += count25 * 50;
           plan.softToWood += count25;
-          var powderFromSoftBulk = 0;
         }
-      } else {
-        var powderFromSoftBulk = 0;
       }
-  
-      /*
-        -------------------------------------------
-        4) 목재 bulk 방향 결정
-        -------------------------------------------
-        100개 직접판매 vs 100개 -> 80가루
-      */
+
       let powder = powderFromSoftBulk;
-  
+
       if (bestWoodPowderPathValue > prices.wood) {
         const bulkW = Math.floor(W / 100) * 100;
         const count100 = bulkW / 100;
@@ -595,125 +478,42 @@
         powder += count100 * 80;
         plan.woodToPowder += count100;
       }
-  
-      /*
-        -------------------------------------------
-        5) 자투리 보정 탐색
-        -------------------------------------------
-        여기서는 매우 작은 범위만 확인
-        - W: 현재 + 최대 300
-        - S: 현재 + 최대 150
-        - T: 현재 + 최대 20
-        이유:
-        큰 bulk는 이미 처리했고, 실제 최적 차이는
-        판매 경계(100), 교환 경계(50/25/5) 근처에서 발생
-      */
-      let best = null;
-  
-      function evaluateSmall(localW, localS, localT, localA, localPowder, localPlan) {
-        // powder 분배는 100단위만 의미 있으므로 여기서 빠르게 탐색
-        const powderBundles = Math.floor(localPowder / 100);
-  
-        // 가능한 분배:
-        // pSoft + pSturdy + pAbidos <= powderBundles
-        // 작은 범위만 돌기 때문에 충분히 빠름
-        let bestLocal = null;
-  
-        for (let pSoft = 0; pSoft <= powderBundles; pSoft++) {
-          for (let pSturdy = 0; pSturdy <= powderBundles - pSoft; pSturdy++) {
-            const pAbidos = powderBundles - pSoft - pSturdy;
-  
-            const finalS = localS + pSoft * 50;
-            const finalT = localT + pSturdy * 10;
-            const finalA = localA + pAbidos * 10;
-  
-            const soldW = Math.floor(localW / 100) * 100;
-            const soldS = Math.floor(finalS / 100) * 100;
-            const soldT = Math.floor(finalT / 100) * 100;
-            const soldA = Math.floor(finalA / 100) * 100;
-  
-            const revenue =
-              (soldW / 100) * prices.wood +
-              (soldS / 100) * prices.soft +
-              (soldT / 100) * prices.sturdy +
-              (soldA / 100) * prices.abidos;
-  
-            if (!bestLocal || revenue > bestLocal.revenue) {
-              bestLocal = {
-                revenue,
-                sell: {
-                  wood: soldW,
-                  soft: soldS,
-                  sturdy: soldT,
-                  abidos: soldA
-                },
-                remain: {
-                  wood: localW - soldW,
-                  soft: finalS - soldS,
-                  sturdy: finalT - soldT,
-                  abidos: finalA - soldA,
-                  powder: localPowder - powderBundles * 100
-                },
-                plan: {
-                  ...localPlan,
-                  powderToSoft: pSoft,
-                  powderToSturdy: pSturdy,
-                  powderToAbidos: pAbidos
-                }
-              };
-            }
-          }
-        }
-  
-        return bestLocal;
-      }
-  
-      // 자투리 보정 후보 생성
-      // bulk 처리 후, 남은 부분 근처만 조정
+
       const baseW = W;
       const baseS = S;
       const baseT = T;
       const baseA = A;
       const basePowder = powder;
-  
-      // 경계 보정용 작은 탐색
-      // 튼튼: 0~4개 추가 교환 후보
-      // 부드러운: 0~1회(25 또는 50) 후보
-      // 목재: 0~1회(100) 후보
+
+      let best = evaluateSmall(baseW, baseS, baseT, baseA, basePowder, prices, { ...plan });
+
       const sturdyCandMax = Math.min(Math.floor(baseT / 5), 8);
       const soft25CandMax = Math.min(Math.floor(baseS / 25), 8);
       const soft50CandMax = Math.min(Math.floor(baseS / 50), 4);
       const woodCandMax = Math.min(Math.floor(baseW / 100), 4);
-  
-      // 아무것도 안 하는 경우 먼저
-      best = evaluateSmall(baseW, baseS, baseT, baseA, basePowder, { ...plan });
-  
-      // 튼튼 -> 목재 보정
+
       for (let extraT2W = 0; extraT2W <= sturdyCandMax; extraT2W++) {
-        let w1 = baseW + extraT2W * 50;
-        let t1 = baseT - extraT2W * 5;
+        const w1 = baseW + extraT2W * 50;
+        const t1 = baseT - extraT2W * 5;
         if (t1 < 0) continue;
-  
-        // 부드러운 -> 목재 보정
+
         for (let extraS2W = 0; extraS2W <= soft25CandMax; extraS2W++) {
-          let w2 = w1 + extraS2W * 50;
-          let s2 = baseS - extraS2W * 25;
+          const w2 = w1 + extraS2W * 50;
+          const s2 = baseS - extraS2W * 25;
           if (s2 < 0) continue;
-  
-          // 부드러운 -> 가루 보정
+
           for (let extraS2P = 0; extraS2P <= soft50CandMax; extraS2P++) {
-            let s3 = s2 - extraS2P * 50;
-            let p3 = basePowder + extraS2P * 80;
+            const s3 = s2 - extraS2P * 50;
+            const p3 = basePowder + extraS2P * 80;
             if (s3 < 0) continue;
-  
-            // 목재 -> 가루 보정
+
             for (let extraW2P = 0; extraW2P <= woodCandMax; extraW2P++) {
-              let w4 = w2 - extraW2P * 100;
-              let p4 = p3 + extraW2P * 80;
+              const w4 = w2 - extraW2P * 100;
+              const p4 = p3 + extraW2P * 80;
               if (w4 < 0) continue;
-  
+
               const candidate = evaluateSmall(
-                w4, s3, t1, baseA, p4,
+                w4, s3, t1, baseA, p4, prices,
                 {
                   sturdyToWood: plan.sturdyToWood + extraT2W,
                   softToWood: plan.softToWood + extraS2W,
@@ -724,7 +524,7 @@
                   powderToAbidos: 0
                 }
               );
-  
+
               if (!best || candidate.revenue > best.revenue) {
                 best = candidate;
               }
@@ -732,10 +532,10 @@
           }
         }
       }
-  
+
       return best;
     }
-  
+
     function calculate() {
       const original = {
         wood: num("wood"),
@@ -743,14 +543,14 @@
         sturdy: num("sturdy"),
         abidos: num("abidos")
       };
-  
+
       const prices = {
         wood: num("priceWood"),
         soft: num("priceSoft"),
         sturdy: num("priceSturdy"),
         abidos: num("priceAbidos")
       };
-  
+
       const baseline = directSaleRevenue(
         original.wood,
         original.soft,
@@ -758,41 +558,68 @@
         original.abidos,
         prices
       );
-  
+
       const best = solveFastOptimized(original, prices);
-  
       renderResult(original, prices, baseline, best);
     }
-  
+
     function renderResult(init, prices, baseline, best) {
       const diff = best.revenue - baseline.revenue;
       const diffClass = diff > 0 ? "success" : (diff < 0 ? "danger" : "warning");
-  
+
       const planRows = [
-        ["튼튼한 목재 → 목재", `${best.plan.sturdyToWood}회`, `튼튼한 목재 ${best.plan.sturdyToWood * 5}개 → 목재 ${best.plan.sturdyToWood * 50}개`],
-        ["부드러운 목재 → 목재", `${best.plan.softToWood}회`, `부드러운 목재 ${best.plan.softToWood * 25}개 → 목재 ${best.plan.softToWood * 50}개`],
-        ["목재 → 벌목의 가루", `${best.plan.woodToPowder}회`, `목재 ${best.plan.woodToPowder * 100}개 → 가루 ${best.plan.woodToPowder * 80}개`],
-        ["부드러운 목재 → 벌목의 가루", `${best.plan.softToPowder}회`, `부드러운 목재 ${best.plan.softToPowder * 50}개 → 가루 ${best.plan.softToPowder * 80}개`],
-        ["가루 → 부드러운 목재", `${best.plan.powderToSoft}회`, `가루 ${best.plan.powderToSoft * 100}개 → 부드러운 목재 ${best.plan.powderToSoft * 50}개`],
-        ["가루 → 튼튼한 목재", `${best.plan.powderToSturdy}회`, `가루 ${best.plan.powderToSturdy * 100}개 → 튼튼한 목재 ${best.plan.powderToSturdy * 10}개`],
-        ["가루 → 아비도스 목재", `${best.plan.powderToAbidos}회`, `가루 ${best.plan.powderToAbidos * 100}개 → 아비도스 목재 ${best.plan.powderToAbidos * 10}개`]
+        [
+          "튼튼한 목재 → 목재",
+          `${best.plan.sturdyToWood}회`,
+          `튼튼한 목재 ${best.plan.sturdyToWood * 5}개 → 목재 ${best.plan.sturdyToWood * 50}개`
+        ],
+        [
+          "부드러운 목재 → 목재",
+          `${best.plan.softToWood}회`,
+          `부드러운 목재 ${best.plan.softToWood * 25}개 → 목재 ${best.plan.softToWood * 50}개`
+        ],
+        [
+          "목재 → 벌목의 가루",
+          `${best.plan.woodToPowder}회`,
+          `목재 ${best.plan.woodToPowder * 100}개 → 가루 ${best.plan.woodToPowder * 80}개`
+        ],
+        [
+          "부드러운 목재 → 벌목의 가루",
+          `${best.plan.softToPowder}회`,
+          `부드러운 목재 ${best.plan.softToPowder * 50}개 → 가루 ${best.plan.softToPowder * 80}개`
+        ],
+        [
+          "가루 → 부드러운 목재",
+          `${best.plan.powderToSoft}회`,
+          `가루 ${best.plan.powderToSoft * 100}개 → 부드러운 목재 ${best.plan.powderToSoft * 50}개`
+        ],
+        [
+          "가루 → 튼튼한 목재",
+          `${best.plan.powderToSturdy}회`,
+          `가루 ${best.plan.powderToSturdy * 100}개 → 튼튼한 목재 ${best.plan.powderToSturdy * 10}개`
+        ],
+        [
+          "가루 → 아비도스 목재",
+          `${best.plan.powderToAbidos}회`,
+          `가루 ${best.plan.powderToAbidos * 100}개 → 아비도스 목재 ${best.plan.powderToAbidos * 10}개`
+        ]
       ];
-  
+
       const html = `
         <div class="card">
           <h2>계산 결과</h2>
-  
+
           <div class="summary">
             <div class="summary-box">
               <div class="label">교환 없이 바로 판매</div>
               <div class="value">${fmt(baseline.revenue)}</div>
             </div>
-  
+
             <div class="summary-box">
               <div class="label">최적 교환 후 판매</div>
               <div class="value">${fmt(best.revenue)}</div>
             </div>
-  
+
             <div class="summary-box">
               <div class="label">교환으로 추가 이득</div>
               <div class="value ${diffClass}">
@@ -800,7 +627,7 @@
               </div>
             </div>
           </div>
-  
+
           <div class="section-title">최적 판매 방식</div>
           <table>
             <thead>
@@ -838,7 +665,7 @@
               </tr>
             </tbody>
           </table>
-  
+
           <div class="section-title">계산된 교환 내역</div>
           <table>
             <thead>
@@ -858,7 +685,7 @@
               `).join("")}
             </tbody>
           </table>
-  
+
           <div class="section-title">교환 없이 바로 팔았을 때</div>
           <table>
             <thead>
@@ -891,7 +718,7 @@
               </tr>
             </tbody>
           </table>
-  
+
           <div class="section-title">최적 교환 후 남는 자원</div>
           <table>
             <thead>
@@ -908,14 +735,14 @@
               <tr><td>벌목의 가루</td><td>${fmt(best.remain.powder)}개</td></tr>
             </tbody>
           </table>
-  
+
           <div class="note">
-            고속 계산 모드가 적용되었습니다.  
-            대량 수량은 bulk 방식으로 빠르게 처리하고, 판매 경계 근처만 추가 보정합니다.
+            고속 계산 모드가 적용되었습니다.<br>
+            대량 수량은 빠르게 처리하고, 판매 경계 근처만 추가 보정합니다.
           </div>
         </div>
       `;
-  
+
       document.getElementById("resultArea").innerHTML = html;
     }
   </script>
