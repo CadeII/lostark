@@ -74,7 +74,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: 1fr 160px;
+      grid-template-columns: 1fr 170px;
       gap: 10px;
       align-items: center;
     }
@@ -198,6 +198,15 @@
       margin-top: 20px;
       font-size: 13px;
       color: var(--muted);
+    }
+
+    .loading {
+      padding: 16px;
+      border-radius: 12px;
+      background: #eef4ff;
+      border: 1px solid #cfe0ff;
+      color: #1d4ed8;
+      font-weight: 700;
     }
 
     @media (max-width: 640px) {
@@ -345,222 +354,326 @@
       };
     }
 
-    function evaluateSmall(localW, localS, localT, localA, localPowder, prices, localPlan) {
-      const powderBundles = Math.floor(localPowder / 100);
+    /*
+      벌목의 가루 배분 최적화
+      ----------------------
+      이 부분은 큰 수량에서도 빠르면서, 현재 상태(S/T/A 잔량 포함)를 반영해
+      정확하게 계산하도록 구성했다.
 
-      let bestLocal = null;
+      x = 가루100 -> 부드러운 목재50 횟수
+      y = 가루100 -> 튼튼한 목재10 횟수
+      z = 가루100 -> 아비도스 목재10 횟수
+      x + y + z = nPowderBundles
 
-      for (let pSoft = 0; pSoft <= powderBundles; pSoft++) {
-        for (let pSturdy = 0; pSturdy <= powderBundles - pSoft; pSturdy++) {
-          const pAbidos = powderBundles - pSoft - pSturdy;
+      부드러운 목재는 2번 교환해야 100 판매 단위가 되고,
+      튼튼/아비도스는 10번 교환해야 100 판매 단위가 된다.
+      그래서 x는 mod 2, y/z는 mod 10만 따지면 되고,
+      나머지는 평균가치가 가장 높은 방향으로 bulk 배분하면 정확하다.
+    */
+    function optimizePowderFastExactish(baseS, baseT, baseA, powder, prices) {
+      const powderBundles = Math.floor(powder / 100);
+      const sBaseBundles = Math.floor(baseS / 100);
+      const tBaseBundles = Math.floor(baseT / 100);
+      const aBaseBundles = Math.floor(baseA / 100);
 
-          const finalS = localS + pSoft * 50;
-          const finalT = localT + pSturdy * 10;
-          const finalA = localA + pAbidos * 10;
+      const rs = baseS % 100;
+      const rt = baseT % 100;
+      const ra = baseA % 100;
 
-          const soldW = Math.floor(localW / 100) * 100;
-          const soldS = Math.floor(finalS / 100) * 100;
-          const soldT = Math.floor(finalT / 100) * 100;
-          const soldA = Math.floor(finalA / 100) * 100;
+      let best = null;
 
-          const revenue =
-            (soldW / 100) * prices.wood +
-            (soldS / 100) * prices.soft +
-            (soldT / 100) * prices.sturdy +
-            (soldA / 100) * prices.abidos;
+      for (let rx = 0; rx <= 1; rx++) {
+        for (let ry = 0; ry <= 9; ry++) {
+          for (let rz = 0; rz <= 9; rz++) {
+            const usedSmall = rx + ry + rz;
+            if (usedSmall > powderBundles) continue;
 
-          if (!bestLocal || revenue > bestLocal.revenue) {
-            bestLocal = {
+            const remain = powderBundles - usedSmall;
+            if (remain % 2 !== 0) continue;
+
+            const unit = remain / 2; // S bulk는 2개당 1번들, T/A bulk는 10개당 1번들
+            const chunk10 = Math.floor(unit / 5); // 10 powder bundles = unit 5
+            const tailSUnits = unit % 5;
+
+            // 10 powder bundles 기준 비교:
+            // S로 보내면 5개 S번들 가치 = 5 * priceSoft
+            // T로 보내면 1개 T번들 가치 = priceSturdy
+            // A로 보내면 1개 A번들 가치 = priceAbidos
+            const chunkValueSoft = 5 * prices.soft;
+            const chunkValueT = prices.sturdy;
+            const chunkValueA = prices.abidos;
+
+            let bulkSUnits = tailSUnits;
+            let bulkTChunks = 0;
+            let bulkAChunks = 0;
+
+            const bestChunkValue = Math.max(chunkValueSoft, chunkValueT, chunkValueA);
+
+            if (bestChunkValue === chunkValueSoft) {
+              bulkSUnits += chunk10 * 5;
+            } else if (bestChunkValue === chunkValueT) {
+              bulkTChunks = chunk10;
+            } else {
+              bulkAChunks = chunk10;
+            }
+
+            const x = rx + 2 * bulkSUnits;
+            const y = ry + 10 * bulkTChunks;
+            const z = rz + 10 * bulkAChunks;
+
+            if (x + y + z !== powderBundles) continue;
+
+            const extraSBundle =
+              bulkSUnits + Math.floor((rs + 50 * rx) / 100);
+            const extraTBundle =
+              bulkTChunks + Math.floor((rt + 10 * ry) / 100);
+            const extraABundle =
+              bulkAChunks + Math.floor((ra + 10 * rz) / 100);
+
+            const sellSoft = (sBaseBundles + extraSBundle) * 100;
+            const sellSturdy = (tBaseBundles + extraTBundle) * 100;
+            const sellAbidos = (aBaseBundles + extraABundle) * 100;
+
+            const revenue =
+              (sellSoft / 100) * prices.soft +
+              (sellSturdy / 100) * prices.sturdy +
+              (sellAbidos / 100) * prices.abidos;
+
+            const finalSoft = baseS + x * 50;
+            const finalSturdy = baseT + y * 10;
+            const finalAbidos = baseA + z * 10;
+
+            const remainSoft = finalSoft - sellSoft;
+            const remainSturdy = finalSturdy - sellSturdy;
+            const remainAbidos = finalAbidos - sellAbidos;
+
+            const candidate = {
               revenue,
-              sell: {
-                wood: soldW,
-                soft: soldS,
-                sturdy: soldT,
-                abidos: soldA
-              },
-              remain: {
-                wood: localW - soldW,
-                soft: finalS - soldS,
-                sturdy: finalT - soldT,
-                abidos: finalA - soldA,
-                powder: localPowder - powderBundles * 100
-              },
-              plan: {
-                ...localPlan,
-                powderToSoft: pSoft,
-                powderToSturdy: pSturdy,
-                powderToAbidos: pAbidos
-              }
+              powderToSoft: x,
+              powderToSturdy: y,
+              powderToAbidos: z,
+              sellSoft,
+              sellSturdy,
+              sellAbidos,
+              remainSoft,
+              remainSturdy,
+              remainAbidos,
+              remainPowder: powder - powderBundles * 100
             };
+
+            if (!best || candidate.revenue > best.revenue) {
+              best = candidate;
+            }
           }
         }
       }
 
-      return bestLocal;
-    }
-
-    function solveFastOptimized(init, prices) {
-      let W = init.wood;
-      let S = init.soft;
-      let T = init.sturdy;
-      let A = init.abidos;
-
-      const plan = {
-        sturdyToWood: 0,
-        softToWood: 0,
-        woodToPowder: 0,
-        softToPowder: 0,
+      return best || {
+        revenue: 0,
         powderToSoft: 0,
         powderToSturdy: 0,
-        powderToAbidos: 0
+        powderToAbidos: 0,
+        sellSoft: Math.floor(baseS / 100) * 100,
+        sellSturdy: Math.floor(baseT / 100) * 100,
+        sellAbidos: Math.floor(baseA / 100) * 100,
+        remainSoft: baseS % 100,
+        remainSturdy: baseT % 100,
+        remainAbidos: baseA % 100,
+        remainPowder: powder
       };
+    }
 
-      const vWoodPer1 = prices.wood / 100;
-      const vSoftPer1 = prices.soft / 100;
-      const vSturdyPer1 = prices.sturdy / 100;
-      const vAbidosPer1 = prices.abidos / 100;
+    function uniqueSorted(arr) {
+      return [...new Set(arr.filter(v => Number.isFinite(v)).map(v => Math.max(0, Math.floor(v))))].sort((a, b) => a - b);
+    }
 
-      const woodToSoftValue = 40 * vSoftPer1;
-      const woodToSturdyValue = 8 * vSturdyPer1;
-      const woodToAbidosValue = 8 * vAbidosPer1;
-      const bestWoodPowderPathValue = Math.max(
-        woodToSoftValue,
-        woodToSturdyValue,
-        woodToAbidosValue
-      );
+    function rangeAround(center, radius, minValue, maxValue) {
+      const out = [];
+      const start = Math.max(minValue, center - radius);
+      const end = Math.min(maxValue, center + radius);
+      for (let i = start; i <= end; i++) out.push(i);
+      return out;
+    }
 
-      const sturdy5DirectValue = prices.sturdy / 20;
-      const sturdy5ToWoodPathValue = 50 * vWoodPer1;
-      const sturdy5ToWoodPowderPathValue = 0.5 * bestWoodPowderPathValue;
+    /*
+      큰 수량용 실전 탐색
+      ------------------
+      1) 극단 시나리오(anchor)를 몇 개 만든다.
+      2) anchor 주변만 짧게 탐색한다.
+      3) 벌목의 가루 배분은 위 함수로 빠르게 최적화한다.
+    */
+    function solveFastImproved(init, prices) {
+      const maxT2W = Math.floor(init.sturdy / 5);
+      const maxS2W = Math.floor(init.soft / 25);
+      const maxS2P = Math.floor(init.soft / 50);
 
-      let powderFromSoftBulk = 0;
+      const tAnchors = uniqueSorted([0, maxT2W]);
+      const sModeAnchors = [
+        { s2w: 0, s2p: 0 },
+        { s2w: maxS2W, s2p: 0 },
+        { s2w: 0, s2p: maxS2P }
+      ];
 
-      if (
-        sturdy5ToWoodPathValue > sturdy5DirectValue ||
-        sturdy5ToWoodPowderPathValue > sturdy5DirectValue
-      ) {
-        const bulkT = Math.floor(T / 5) * 5;
-        const convertCount = bulkT / 5;
-        T -= bulkT;
-        W += convertCount * 50;
-        plan.sturdyToWood += convertCount;
-      }
+      let best = null;
 
-      const soft25ToWoodValue = 50 * vWoodPer1;
-      const soft50ToPowderValue = Math.max(
-        50 * 0.8 * 0.5 * vSoftPer1,
-        50 * 0.8 * 0.1 * vSturdyPer1,
-        50 * 0.8 * 0.1 * vAbidosPer1
-      );
+      // 탐색 반경
+      const R_T2W = 10; // 21개
+      const R_S2W = 4;  // 9개
+      const R_S2P = 3;  // 7개
+      const R_W2P = 5;  // 11개
 
-      if (soft25ToWoodValue > prices.soft / 4 || soft50ToPowderValue > prices.soft / 2) {
-        if (soft50ToPowderValue >= soft25ToWoodValue) {
-          const bulkS50 = Math.floor(S / 50) * 50;
-          const count50 = bulkS50 / 50;
-          S -= bulkS50;
-          plan.softToPowder += count50;
-          powderFromSoftBulk += count50 * 80;
-        } else {
-          const bulkS25 = Math.floor(S / 25) * 25;
-          const count25 = bulkS25 / 25;
-          S -= bulkS25;
-          W += count25 * 50;
-          plan.softToWood += count25;
-        }
-      }
+      for (const tAnchor of tAnchors) {
+        for (const sAnchor of sModeAnchors) {
+          const x1Candidates = rangeAround(tAnchor, R_T2W, 0, maxT2W);
 
-      let powder = powderFromSoftBulk;
+          for (const x1 of x1Candidates) {
+            const sturdyAfterX1 = init.sturdy - x1 * 5;
+            const woodAfterX1 = init.wood + x1 * 50;
+            if (sturdyAfterX1 < 0) continue;
 
-      if (bestWoodPowderPathValue > prices.wood) {
-        const bulkW = Math.floor(W / 100) * 100;
-        const count100 = bulkW / 100;
-        W -= bulkW;
-        powder += count100 * 80;
-        plan.woodToPowder += count100;
-      }
+            const x2Candidates = rangeAround(sAnchor.s2w, R_S2W, 0, maxS2W);
+            const x4Candidates = rangeAround(sAnchor.s2p, R_S2P, 0, maxS2P);
 
-      const baseW = W;
-      const baseS = S;
-      const baseT = T;
-      const baseA = A;
-      const basePowder = powder;
+            for (const x2 of x2Candidates) {
+              for (const x4 of x4Candidates) {
+                const softConsumed = x2 * 25 + x4 * 50;
+                if (softConsumed > init.soft) continue;
 
-      let best = evaluateSmall(baseW, baseS, baseT, baseA, basePowder, prices, { ...plan });
+                const softAfter = init.soft - softConsumed;
+                const woodAfterX2 = woodAfterX1 + x2 * 50;
+                const powderFromSoft = x4 * 80;
 
-      const sturdyCandMax = Math.min(Math.floor(baseT / 5), 8);
-      const soft25CandMax = Math.min(Math.floor(baseS / 25), 8);
-      const soft50CandMax = Math.min(Math.floor(baseS / 50), 4);
-      const woodCandMax = Math.min(Math.floor(baseW / 100), 4);
+                const maxW2P = Math.floor(woodAfterX2 / 100);
+                const wAnchorGreedy = 0;
+                const wAnchorAll = maxW2P;
+                const wAnchors = uniqueSorted([wAnchorGreedy, wAnchorAll]);
 
-      for (let extraT2W = 0; extraT2W <= sturdyCandMax; extraT2W++) {
-        const w1 = baseW + extraT2W * 50;
-        const t1 = baseT - extraT2W * 5;
-        if (t1 < 0) continue;
+                for (const wAnchor of wAnchors) {
+                  const x3Candidates = rangeAround(wAnchor, R_W2P, 0, maxW2P);
 
-        for (let extraS2W = 0; extraS2W <= soft25CandMax; extraS2W++) {
-          const w2 = w1 + extraS2W * 50;
-          const s2 = baseS - extraS2W * 25;
-          if (s2 < 0) continue;
+                  for (const x3 of x3Candidates) {
+                    const woodAfter = woodAfterX2 - x3 * 100;
+                    if (woodAfter < 0) continue;
 
-          for (let extraS2P = 0; extraS2P <= soft50CandMax; extraS2P++) {
-            const s3 = s2 - extraS2P * 50;
-            const p3 = basePowder + extraS2P * 80;
-            if (s3 < 0) continue;
+                    const powder = powderFromSoft + x3 * 80;
 
-            for (let extraW2P = 0; extraW2P <= woodCandMax; extraW2P++) {
-              const w4 = w2 - extraW2P * 100;
-              const p4 = p3 + extraW2P * 80;
-              if (w4 < 0) continue;
+                    const sellWood = Math.floor(woodAfter / 100) * 100;
+                    const woodRevenue = (sellWood / 100) * prices.wood;
+                    const woodRemain = woodAfter - sellWood;
 
-              const candidate = evaluateSmall(
-                w4, s3, t1, baseA, p4, prices,
-                {
-                  sturdyToWood: plan.sturdyToWood + extraT2W,
-                  softToWood: plan.softToWood + extraS2W,
-                  woodToPowder: plan.woodToPowder + extraW2P,
-                  softToPowder: plan.softToPowder + extraS2P,
-                  powderToSoft: 0,
-                  powderToSturdy: 0,
-                  powderToAbidos: 0
+                    const powderResult = optimizePowderFastExactish(
+                      softAfter,
+                      sturdyAfterX1,
+                      init.abidos,
+                      powder,
+                      prices
+                    );
+
+                    const totalRevenue = woodRevenue + powderResult.revenue;
+
+                    const candidate = {
+                      revenue: totalRevenue,
+                      plan: {
+                        sturdyToWood: x1,
+                        softToWood: x2,
+                        woodToPowder: x3,
+                        softToPowder: x4,
+                        powderToSoft: powderResult.powderToSoft,
+                        powderToSturdy: powderResult.powderToSturdy,
+                        powderToAbidos: powderResult.powderToAbidos
+                      },
+                      sell: {
+                        wood: sellWood,
+                        soft: powderResult.sellSoft,
+                        sturdy: powderResult.sellSturdy,
+                        abidos: powderResult.sellAbidos
+                      },
+                      remain: {
+                        wood: woodRemain,
+                        soft: powderResult.remainSoft,
+                        sturdy: powderResult.remainSturdy,
+                        abidos: powderResult.remainAbidos,
+                        powder: powderResult.remainPowder
+                      }
+                    };
+
+                    if (!best || candidate.revenue > best.revenue) {
+                      best = candidate;
+                    }
+                  }
                 }
-              );
-
-              if (!best || candidate.revenue > best.revenue) {
-                best = candidate;
               }
             }
           }
         }
       }
 
+      // 안전장치: 어떤 이유로 후보가 없으면 직판
+      if (!best) {
+        const baseline = directSaleRevenue(
+          init.wood, init.soft, init.sturdy, init.abidos, prices
+        );
+
+        best = {
+          revenue: baseline.revenue,
+          plan: {
+            sturdyToWood: 0,
+            softToWood: 0,
+            woodToPowder: 0,
+            softToPowder: 0,
+            powderToSoft: 0,
+            powderToSturdy: 0,
+            powderToAbidos: 0
+          },
+          sell: {
+            wood: baseline.sellWood,
+            soft: baseline.sellSoft,
+            sturdy: baseline.sellSturdy,
+            abidos: baseline.sellAbidos
+          },
+          remain: {
+            wood: baseline.leftWood,
+            soft: baseline.leftSoft,
+            sturdy: baseline.leftSturdy,
+            abidos: baseline.leftAbidos,
+            powder: 0
+          }
+        };
+      }
+
       return best;
     }
 
     function calculate() {
-      const original = {
-        wood: num("wood"),
-        soft: num("soft"),
-        sturdy: num("sturdy"),
-        abidos: num("abidos")
-      };
+      document.getElementById("resultArea").innerHTML =
+        '<div class="loading">계산 중입니다...</div>';
 
-      const prices = {
-        wood: num("priceWood"),
-        soft: num("priceSoft"),
-        sturdy: num("priceSturdy"),
-        abidos: num("priceAbidos")
-      };
+      setTimeout(() => {
+        const original = {
+          wood: num("wood"),
+          soft: num("soft"),
+          sturdy: num("sturdy"),
+          abidos: num("abidos")
+        };
 
-      const baseline = directSaleRevenue(
-        original.wood,
-        original.soft,
-        original.sturdy,
-        original.abidos,
-        prices
-      );
+        const prices = {
+          wood: num("priceWood"),
+          soft: num("priceSoft"),
+          sturdy: num("priceSturdy"),
+          abidos: num("priceAbidos")
+        };
 
-      const best = solveFastOptimized(original, prices);
-      renderResult(original, prices, baseline, best);
+        const baseline = directSaleRevenue(
+          original.wood,
+          original.soft,
+          original.sturdy,
+          original.abidos,
+          prices
+        );
+
+        const best = solveFastImproved(original, prices);
+        renderResult(original, prices, baseline, best);
+      }, 0);
     }
 
     function renderResult(init, prices, baseline, best) {
@@ -737,7 +850,7 @@
           </table>
 
           <div class="note">
-            목재 쌀 먹기
+            목재 싹싹김
           </div>
         </div>
       `;
