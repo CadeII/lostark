@@ -561,39 +561,35 @@
           items.push({ mode: 'unbounded', cost: 50, value: data.priceTough, kind: 'tc', qty: 1 });
           items.push({ mode: 'unbounded', cost: 50, value: data.priceAbidos, kind: 'ac', qty: 1 });
 
-          const dp = new Float64Array(baseE + 1);
-          const prevCap = new Int32Array(baseE + 1);
-          const prevItem = new Int32Array(baseE + 1);
-          for (let i = 0; i <= baseE; i += 1) {
-            dp[i] = NEG;
-            prevCap[i] = -1;
-            prevItem[i] = -1;
-          }
-          dp[0] = 0;
+          const dp = Array.from({ length: items.length + 1 }, () => {
+            const row = new Float64Array(baseE + 1);
+            row.fill(NEG);
+            return row;
+          });
+          dp[0][0] = 0;
 
-          for (let idx = 0; idx < items.length; idx += 1) {
-            const item = items[idx];
+          for (let i = 0; i < items.length; i += 1) {
+            const item = items[i];
+            const prev = dp[i];
+            const cur = dp[i + 1];
+
+            for (let cap = 0; cap <= baseE; cap += 1) {
+              cur[cap] = prev[cap];
+            }
+
             if (item.mode === '01') {
-              for (let cap = baseE; cap >= item.cost; cap -= 1) {
-                const prev = dp[cap - item.cost];
-                if (prev <= NEG / 2) continue;
-                const candidate = prev + item.value;
-                if (candidate > dp[cap]) {
-                  dp[cap] = candidate;
-                  prevCap[cap] = cap - item.cost;
-                  prevItem[cap] = idx;
-                }
+              for (let cap = item.cost; cap <= baseE; cap += 1) {
+                const base = prev[cap - item.cost];
+                if (base <= NEG / 2) continue;
+                const candidate = base + item.value;
+                if (candidate > cur[cap]) cur[cap] = candidate;
               }
             } else {
               for (let cap = item.cost; cap <= baseE; cap += 1) {
-                const prev = dp[cap - item.cost];
-                if (prev <= NEG / 2) continue;
-                const candidate = prev + item.value;
-                if (candidate > dp[cap]) {
-                  dp[cap] = candidate;
-                  prevCap[cap] = cap - item.cost;
-                  prevItem[cap] = idx;
-                }
+                const base = cur[cap - item.cost];
+                if (base <= NEG / 2) continue;
+                const candidate = base + item.value;
+                if (candidate > cur[cap]) cur[cap] = candidate;
               }
             }
           }
@@ -601,8 +597,8 @@
           let bestCap = 0;
           let bestValue = NEG;
           for (let cap = 0; cap <= baseE; cap += 1) {
-            if (dp[cap] > bestValue) {
-              bestValue = dp[cap];
+            if (dp[items.length][cap] > bestValue) {
+              bestValue = dp[items.length][cap];
               bestCap = cap;
             }
           }
@@ -615,11 +611,34 @@
             sc_first: 0, tc_first: 0, ac_first: 0
           };
 
-          let cursor = bestCap;
-          while (cursor > 0 && prevItem[cursor] !== -1) {
-            const item = items[prevItem[cursor]];
-            counts[item.kind] += item.qty;
-            cursor = prevCap[cursor];
+          let i = items.length;
+          let cap = bestCap;
+          while (i > 0 && cap >= 0) {
+            const item = items[i - 1];
+            if (item.mode === '01') {
+              if (
+                cap >= item.cost &&
+                dp[i][cap] === dp[i - 1][cap - item.cost] + item.value
+              ) {
+                counts[item.kind] += item.qty;
+                cap -= item.cost;
+              }
+              i -= 1;
+            } else {
+              if (
+                cap >= item.cost &&
+                dp[i][cap] === dp[i][cap - item.cost] + item.value
+              ) {
+                counts[item.kind] += item.qty;
+                cap -= item.cost;
+              } else {
+                i -= 1;
+              }
+            }
+          }
+
+          if (counts.sc_first > 1 || counts.tc_first > 1 || counts.ac_first > 1) {
+            throw new Error('복원 오류: first 배치가 중복 집계되었습니다.');
           }
 
           const soldWoodBatches = counts.wd + counts.wc;
@@ -633,8 +652,11 @@
             soldToughBatches * data.priceTough +
             soldAbidosBatches * data.priceAbidos;
 
-          if (!best || totalRevenue > best.totalRevenue) {
+          const score = bestValue + abidosDirect * data.priceAbidos;
+
+          if (!best || score > best.score) {
             best = {
+              score,
               totalRevenue,
               spentE: bestCap,
               baseE,
