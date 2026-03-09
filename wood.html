@@ -417,507 +417,507 @@
   </div>
 
   <script>
-  function num(id) {
-    return Math.max(0, Math.floor(Number(document.getElementById(id).value) || 0));
-  }
-
-  function fmt(n) {
-    return Math.round(n).toLocaleString("ko-KR");
-  }
-
-  function fillExample() {
-    document.getElementById("wood").value = 1350;
-    document.getElementById("soft").value = 820;
-    document.getElementById("sturdy").value = 265;
-    document.getElementById("abidos").value = 140;
-
-    document.getElementById("priceWood").value = 900;
-    document.getElementById("priceSoft").value = 2400;
-    document.getElementById("priceSturdy").value = 6800;
-    document.getElementById("priceAbidos").value = 12000;
-  }
-
-  function resetForm() {
-    ["wood","soft","sturdy","abidos","priceWood","priceSoft","priceSturdy","priceAbidos"]
-      .forEach(id => document.getElementById(id).value = 0);
-    document.getElementById("resultArea").innerHTML = '<div class="empty">아직 계산하지 않았습니다.</div>';
-  }
-
-  function directSaleRevenue(w, s, t, a, prices) {
-    const sellWoodBundles = Math.floor(w / 100);
-    const sellSoftBundles = Math.floor(s / 100);
-    const sellSturdyBundles = Math.floor(t / 100);
-    const sellAbidosBundles = Math.floor(a / 100);
-
-    const revenue =
-      sellWoodBundles * prices.wood +
-      sellSoftBundles * prices.soft +
-      sellSturdyBundles * prices.sturdy +
-      sellAbidosBundles * prices.abidos;
-
-    return {
-      revenue,
-      sellWood: sellWoodBundles * 100,
-      sellSoft: sellSoftBundles * 100,
-      sellSturdy: sellSturdyBundles * 100,
-      sellAbidos: sellAbidosBundles * 100,
-      leftWood: w - sellWoodBundles * 100,
-      leftSoft: s - sellSoftBundles * 100,
-      leftSturdy: t - sellSturdyBundles * 100,
-      leftAbidos: a - sellAbidosBundles * 100
-    };
-  }
-
-  /*
-    =========================================================
-    고속 최적화 핵심 아이디어
-    ---------------------------------------------------------
-    1) 완전탐색 제거
-    2) 각 자원을 "목재 환산 가치"와 "가루 경유 가치"로 비교
-    3) 대량 구간은 한 번에 처리
-    4) 마지막 경계 구간만 세밀 보정
-    =========================================================
-  */
-
-  function solveFastOptimized(init, prices) {
-    // 복사
-    let W = init.wood;
-    let S = init.soft;
-    let T = init.sturdy;
-    let A = init.abidos;
-
-    const plan = {
-      sturdyToWood: 0,
-      softToWood: 0,
-      woodToPowder: 0,
-      softToPowder: 0,
-      powderToSoft: 0,
-      powderToSturdy: 0,
-      powderToAbidos: 0
-    };
-
-    /*
-      -------------------------------------------
-      1) 단위당 "대략적인 가치" 계산
-      -------------------------------------------
-      판매는 100개 단위라서 실제 계산은 번들 기준이지만,
-      bulk 방향을 빠르게 정하기 위해 단위당 가치를 사용.
-    */
-    const vWoodPer1 = prices.wood / 100;
-    const vSoftPer1 = prices.soft / 100;
-    const vSturdyPer1 = prices.sturdy / 100;
-    const vAbidosPer1 = prices.abidos / 100;
-
-    // 교환 경로 기준 기대 가치 비교
-    // 100 목재 -> 80 가루
-    // 100 가루 -> 50 부드러운 / 10 튼튼 / 10 아비도스
-    // 따라서:
-    // 100 목재 -> 80 가루 -> 40 부드러운 / 8 튼튼 / 8 아비도스
-    const woodToSoftValue = 40 * vSoftPer1;
-    const woodToSturdyValue = 8 * vSturdyPer1;
-    const woodToAbidosValue = 8 * vAbidosPer1;
-    const bestWoodPowderPathValue = Math.max(woodToSoftValue, woodToSturdyValue, woodToAbidosValue);
-
-    // 50 부드러운 -> 80 가루
-    // 80 가루 -> 직접 완전교환 안됨. bulk 판단용 기대값만 사용
-    // 50 부드러운의 직접 판매가치는 0.5 * prices.soft
-    const softHalfDirectValue = prices.soft / 2;
-
-    // 5 튼튼 -> 50 목재
-    // 5 튼튼 직접 판매 가치 = prices.sturdy / 20
-    const sturdy5DirectValue = prices.sturdy / 20;
-    const sturdy5ToWoodPathValue = 50 * vWoodPer1;
-    const sturdy5ToWoodPowderPathValue = 0.5 * bestWoodPowderPathValue;
-
-    /*
-      -------------------------------------------
-      2) 튼튼한 목재 bulk 방향 결정
-      -------------------------------------------
-      5개 단위 기준으로 비교
-    */
-    if (sturdy5ToWoodPathValue > sturdy5DirectValue || sturdy5ToWoodPowderPathValue > sturdy5DirectValue) {
-      const bulkT = Math.floor(T / 5) * 5;
-      const convertCount = bulkT / 5;
-      T -= bulkT;
-      W += convertCount * 50;
-      plan.sturdyToWood += convertCount;
+    function num(id) {
+      return Math.max(0, Math.floor(Number(document.getElementById(id).value) || 0));
     }
-
+  
+    function fmt(n) {
+      return Math.round(n).toLocaleString("ko-KR");
+    }
+  
+    function fillExample() {
+      document.getElementById("wood").value = 1350;
+      document.getElementById("soft").value = 820;
+      document.getElementById("sturdy").value = 265;
+      document.getElementById("abidos").value = 140;
+  
+      document.getElementById("priceWood").value = 900;
+      document.getElementById("priceSoft").value = 2400;
+      document.getElementById("priceSturdy").value = 6800;
+      document.getElementById("priceAbidos").value = 12000;
+    }
+  
+    function resetForm() {
+      ["wood","soft","sturdy","abidos","priceWood","priceSoft","priceSturdy","priceAbidos"]
+        .forEach(id => document.getElementById(id).value = 0);
+      document.getElementById("resultArea").innerHTML = '<div class="empty">아직 계산하지 않았습니다.</div>';
+    }
+  
+    function directSaleRevenue(w, s, t, a, prices) {
+      const sellWoodBundles = Math.floor(w / 100);
+      const sellSoftBundles = Math.floor(s / 100);
+      const sellSturdyBundles = Math.floor(t / 100);
+      const sellAbidosBundles = Math.floor(a / 100);
+  
+      const revenue =
+        sellWoodBundles * prices.wood +
+        sellSoftBundles * prices.soft +
+        sellSturdyBundles * prices.sturdy +
+        sellAbidosBundles * prices.abidos;
+  
+      return {
+        revenue,
+        sellWood: sellWoodBundles * 100,
+        sellSoft: sellSoftBundles * 100,
+        sellSturdy: sellSturdyBundles * 100,
+        sellAbidos: sellAbidosBundles * 100,
+        leftWood: w - sellWoodBundles * 100,
+        leftSoft: s - sellSoftBundles * 100,
+        leftSturdy: t - sellSturdyBundles * 100,
+        leftAbidos: a - sellAbidosBundles * 100
+      };
+    }
+  
     /*
-      -------------------------------------------
-      3) 부드러운 목재 bulk 방향 결정
-      -------------------------------------------
-      25개 -> 50목재
-      50개 -> 80가루
-      100개 직접판매
+      =========================================================
+      고속 최적화 핵심 아이디어
+      ---------------------------------------------------------
+      1) 완전탐색 제거
+      2) 각 자원을 "목재 환산 가치"와 "가루 경유 가치"로 비교
+      3) 대량 구간은 한 번에 처리
+      4) 마지막 경계 구간만 세밀 보정
+      =========================================================
     */
-    const soft25ToWoodValue = 50 * vWoodPer1;
-    const soft50ToPowderValue = Math.max(
-      50 * 0.8 * 0.5 * vSoftPer1,  // 근사
-      50 * 0.8 * 0.1 * vSturdyPer1,
-      50 * 0.8 * 0.1 * vAbidosPer1
-    );
-
-    if (soft25ToWoodValue > prices.soft / 4 || soft50ToPowderValue > prices.soft / 2) {
-      // 50개 단위로 가루가 더 좋으면 먼저 50개 단위 처리
-      if (soft50ToPowderValue >= soft25ToWoodValue) {
-        const bulkS50 = Math.floor(S / 50) * 50;
-        const count50 = bulkS50 / 50;
-        S -= bulkS50;
-        plan.softToPowder += count50;
-        // 가루는 뒤에서 일괄 계산
-        W += 0; // nothing
-        var powderFromSoftBulk = count50 * 80;
+  
+    function solveFastOptimized(init, prices) {
+      // 복사
+      let W = init.wood;
+      let S = init.soft;
+      let T = init.sturdy;
+      let A = init.abidos;
+  
+      const plan = {
+        sturdyToWood: 0,
+        softToWood: 0,
+        woodToPowder: 0,
+        softToPowder: 0,
+        powderToSoft: 0,
+        powderToSturdy: 0,
+        powderToAbidos: 0
+      };
+  
+      /*
+        -------------------------------------------
+        1) 단위당 "대략적인 가치" 계산
+        -------------------------------------------
+        판매는 100개 단위라서 실제 계산은 번들 기준이지만,
+        bulk 방향을 빠르게 정하기 위해 단위당 가치를 사용.
+      */
+      const vWoodPer1 = prices.wood / 100;
+      const vSoftPer1 = prices.soft / 100;
+      const vSturdyPer1 = prices.sturdy / 100;
+      const vAbidosPer1 = prices.abidos / 100;
+  
+      // 교환 경로 기준 기대 가치 비교
+      // 100 목재 -> 80 가루
+      // 100 가루 -> 50 부드러운 / 10 튼튼 / 10 아비도스
+      // 따라서:
+      // 100 목재 -> 80 가루 -> 40 부드러운 / 8 튼튼 / 8 아비도스
+      const woodToSoftValue = 40 * vSoftPer1;
+      const woodToSturdyValue = 8 * vSturdyPer1;
+      const woodToAbidosValue = 8 * vAbidosPer1;
+      const bestWoodPowderPathValue = Math.max(woodToSoftValue, woodToSturdyValue, woodToAbidosValue);
+  
+      // 50 부드러운 -> 80 가루
+      // 80 가루 -> 직접 완전교환 안됨. bulk 판단용 기대값만 사용
+      // 50 부드러운의 직접 판매가치는 0.5 * prices.soft
+      const softHalfDirectValue = prices.soft / 2;
+  
+      // 5 튼튼 -> 50 목재
+      // 5 튼튼 직접 판매 가치 = prices.sturdy / 20
+      const sturdy5DirectValue = prices.sturdy / 20;
+      const sturdy5ToWoodPathValue = 50 * vWoodPer1;
+      const sturdy5ToWoodPowderPathValue = 0.5 * bestWoodPowderPathValue;
+  
+      /*
+        -------------------------------------------
+        2) 튼튼한 목재 bulk 방향 결정
+        -------------------------------------------
+        5개 단위 기준으로 비교
+      */
+      if (sturdy5ToWoodPathValue > sturdy5DirectValue || sturdy5ToWoodPowderPathValue > sturdy5DirectValue) {
+        const bulkT = Math.floor(T / 5) * 5;
+        const convertCount = bulkT / 5;
+        T -= bulkT;
+        W += convertCount * 50;
+        plan.sturdyToWood += convertCount;
+      }
+  
+      /*
+        -------------------------------------------
+        3) 부드러운 목재 bulk 방향 결정
+        -------------------------------------------
+        25개 -> 50목재
+        50개 -> 80가루
+        100개 직접판매
+      */
+      const soft25ToWoodValue = 50 * vWoodPer1;
+      const soft50ToPowderValue = Math.max(
+        50 * 0.8 * 0.5 * vSoftPer1,  // 근사
+        50 * 0.8 * 0.1 * vSturdyPer1,
+        50 * 0.8 * 0.1 * vAbidosPer1
+      );
+  
+      if (soft25ToWoodValue > prices.soft / 4 || soft50ToPowderValue > prices.soft / 2) {
+        // 50개 단위로 가루가 더 좋으면 먼저 50개 단위 처리
+        if (soft50ToPowderValue >= soft25ToWoodValue) {
+          const bulkS50 = Math.floor(S / 50) * 50;
+          const count50 = bulkS50 / 50;
+          S -= bulkS50;
+          plan.softToPowder += count50;
+          // 가루는 뒤에서 일괄 계산
+          W += 0; // nothing
+          var powderFromSoftBulk = count50 * 80;
+        } else {
+          const bulkS25 = Math.floor(S / 25) * 25;
+          const count25 = bulkS25 / 25;
+          S -= bulkS25;
+          W += count25 * 50;
+          plan.softToWood += count25;
+          var powderFromSoftBulk = 0;
+        }
       } else {
-        const bulkS25 = Math.floor(S / 25) * 25;
-        const count25 = bulkS25 / 25;
-        S -= bulkS25;
-        W += count25 * 50;
-        plan.softToWood += count25;
         var powderFromSoftBulk = 0;
       }
-    } else {
-      var powderFromSoftBulk = 0;
-    }
-
-    /*
-      -------------------------------------------
-      4) 목재 bulk 방향 결정
-      -------------------------------------------
-      100개 직접판매 vs 100개 -> 80가루
-    */
-    let powder = powderFromSoftBulk;
-
-    if (bestWoodPowderPathValue > prices.wood) {
-      const bulkW = Math.floor(W / 100) * 100;
-      const count100 = bulkW / 100;
-      W -= bulkW;
-      powder += count100 * 80;
-      plan.woodToPowder += count100;
-    }
-
-    /*
-      -------------------------------------------
-      5) 자투리 보정 탐색
-      -------------------------------------------
-      여기서는 매우 작은 범위만 확인
-      - W: 현재 + 최대 300
-      - S: 현재 + 최대 150
-      - T: 현재 + 최대 20
-      이유:
-      큰 bulk는 이미 처리했고, 실제 최적 차이는
-      판매 경계(100), 교환 경계(50/25/5) 근처에서 발생
-    */
-    let best = null;
-
-    function evaluateSmall(localW, localS, localT, localA, localPowder, localPlan) {
-      // powder 분배는 100단위만 의미 있으므로 여기서 빠르게 탐색
-      const powderBundles = Math.floor(localPowder / 100);
-
-      // 가능한 분배:
-      // pSoft + pSturdy + pAbidos <= powderBundles
-      // 작은 범위만 돌기 때문에 충분히 빠름
-      let bestLocal = null;
-
-      for (let pSoft = 0; pSoft <= powderBundles; pSoft++) {
-        for (let pSturdy = 0; pSturdy <= powderBundles - pSoft; pSturdy++) {
-          const pAbidos = powderBundles - pSoft - pSturdy;
-
-          const finalS = localS + pSoft * 50;
-          const finalT = localT + pSturdy * 10;
-          const finalA = localA + pAbidos * 10;
-
-          const soldW = Math.floor(localW / 100) * 100;
-          const soldS = Math.floor(finalS / 100) * 100;
-          const soldT = Math.floor(finalT / 100) * 100;
-          const soldA = Math.floor(finalA / 100) * 100;
-
-          const revenue =
-            (soldW / 100) * prices.wood +
-            (soldS / 100) * prices.soft +
-            (soldT / 100) * prices.sturdy +
-            (soldA / 100) * prices.abidos;
-
-          if (!bestLocal || revenue > bestLocal.revenue) {
-            bestLocal = {
-              revenue,
-              sell: {
-                wood: soldW,
-                soft: soldS,
-                sturdy: soldT,
-                abidos: soldA
-              },
-              remain: {
-                wood: localW - soldW,
-                soft: finalS - soldS,
-                sturdy: finalT - soldT,
-                abidos: finalA - soldA,
-                powder: localPowder - powderBundles * 100
-              },
-              plan: {
-                ...localPlan,
-                powderToSoft: pSoft,
-                powderToSturdy: pSturdy,
-                powderToAbidos: pAbidos
-              }
-            };
+  
+      /*
+        -------------------------------------------
+        4) 목재 bulk 방향 결정
+        -------------------------------------------
+        100개 직접판매 vs 100개 -> 80가루
+      */
+      let powder = powderFromSoftBulk;
+  
+      if (bestWoodPowderPathValue > prices.wood) {
+        const bulkW = Math.floor(W / 100) * 100;
+        const count100 = bulkW / 100;
+        W -= bulkW;
+        powder += count100 * 80;
+        plan.woodToPowder += count100;
+      }
+  
+      /*
+        -------------------------------------------
+        5) 자투리 보정 탐색
+        -------------------------------------------
+        여기서는 매우 작은 범위만 확인
+        - W: 현재 + 최대 300
+        - S: 현재 + 최대 150
+        - T: 현재 + 최대 20
+        이유:
+        큰 bulk는 이미 처리했고, 실제 최적 차이는
+        판매 경계(100), 교환 경계(50/25/5) 근처에서 발생
+      */
+      let best = null;
+  
+      function evaluateSmall(localW, localS, localT, localA, localPowder, localPlan) {
+        // powder 분배는 100단위만 의미 있으므로 여기서 빠르게 탐색
+        const powderBundles = Math.floor(localPowder / 100);
+  
+        // 가능한 분배:
+        // pSoft + pSturdy + pAbidos <= powderBundles
+        // 작은 범위만 돌기 때문에 충분히 빠름
+        let bestLocal = null;
+  
+        for (let pSoft = 0; pSoft <= powderBundles; pSoft++) {
+          for (let pSturdy = 0; pSturdy <= powderBundles - pSoft; pSturdy++) {
+            const pAbidos = powderBundles - pSoft - pSturdy;
+  
+            const finalS = localS + pSoft * 50;
+            const finalT = localT + pSturdy * 10;
+            const finalA = localA + pAbidos * 10;
+  
+            const soldW = Math.floor(localW / 100) * 100;
+            const soldS = Math.floor(finalS / 100) * 100;
+            const soldT = Math.floor(finalT / 100) * 100;
+            const soldA = Math.floor(finalA / 100) * 100;
+  
+            const revenue =
+              (soldW / 100) * prices.wood +
+              (soldS / 100) * prices.soft +
+              (soldT / 100) * prices.sturdy +
+              (soldA / 100) * prices.abidos;
+  
+            if (!bestLocal || revenue > bestLocal.revenue) {
+              bestLocal = {
+                revenue,
+                sell: {
+                  wood: soldW,
+                  soft: soldS,
+                  sturdy: soldT,
+                  abidos: soldA
+                },
+                remain: {
+                  wood: localW - soldW,
+                  soft: finalS - soldS,
+                  sturdy: finalT - soldT,
+                  abidos: finalA - soldA,
+                  powder: localPowder - powderBundles * 100
+                },
+                plan: {
+                  ...localPlan,
+                  powderToSoft: pSoft,
+                  powderToSturdy: pSturdy,
+                  powderToAbidos: pAbidos
+                }
+              };
+            }
           }
         }
+  
+        return bestLocal;
       }
-
-      return bestLocal;
-    }
-
-    // 자투리 보정 후보 생성
-    // bulk 처리 후, 남은 부분 근처만 조정
-    const baseW = W;
-    const baseS = S;
-    const baseT = T;
-    const baseA = A;
-    const basePowder = powder;
-
-    // 경계 보정용 작은 탐색
-    // 튼튼: 0~4개 추가 교환 후보
-    // 부드러운: 0~1회(25 또는 50) 후보
-    // 목재: 0~1회(100) 후보
-    const sturdyCandMax = Math.min(Math.floor(baseT / 5), 8);
-    const soft25CandMax = Math.min(Math.floor(baseS / 25), 8);
-    const soft50CandMax = Math.min(Math.floor(baseS / 50), 4);
-    const woodCandMax = Math.min(Math.floor(baseW / 100), 4);
-
-    // 아무것도 안 하는 경우 먼저
-    best = evaluateSmall(baseW, baseS, baseT, baseA, basePowder, { ...plan });
-
-    // 튼튼 -> 목재 보정
-    for (let extraT2W = 0; extraT2W <= sturdyCandMax; extraT2W++) {
-      let w1 = baseW + extraT2W * 50;
-      let t1 = baseT - extraT2W * 5;
-      if (t1 < 0) continue;
-
-      // 부드러운 -> 목재 보정
-      for (let extraS2W = 0; extraS2W <= soft25CandMax; extraS2W++) {
-        let w2 = w1 + extraS2W * 50;
-        let s2 = baseS - extraS2W * 25;
-        if (s2 < 0) continue;
-
-        // 부드러운 -> 가루 보정
-        for (let extraS2P = 0; extraS2P <= soft50CandMax; extraS2P++) {
-          let s3 = s2 - extraS2P * 50;
-          let p3 = basePowder + extraS2P * 80;
-          if (s3 < 0) continue;
-
-          // 목재 -> 가루 보정
-          for (let extraW2P = 0; extraW2P <= woodCandMax; extraW2P++) {
-            let w4 = w2 - extraW2P * 100;
-            let p4 = p3 + extraW2P * 80;
-            if (w4 < 0) continue;
-
-            const candidate = evaluateSmall(
-              w4, s3, t1, baseA, p4,
-              {
-                sturdyToWood: plan.sturdyToWood + extraT2W,
-                softToWood: plan.softToWood + extraS2W,
-                woodToPowder: plan.woodToPowder + extraW2P,
-                softToPowder: plan.softToPowder + extraS2P,
-                powderToSoft: 0,
-                powderToSturdy: 0,
-                powderToAbidos: 0
+  
+      // 자투리 보정 후보 생성
+      // bulk 처리 후, 남은 부분 근처만 조정
+      const baseW = W;
+      const baseS = S;
+      const baseT = T;
+      const baseA = A;
+      const basePowder = powder;
+  
+      // 경계 보정용 작은 탐색
+      // 튼튼: 0~4개 추가 교환 후보
+      // 부드러운: 0~1회(25 또는 50) 후보
+      // 목재: 0~1회(100) 후보
+      const sturdyCandMax = Math.min(Math.floor(baseT / 5), 8);
+      const soft25CandMax = Math.min(Math.floor(baseS / 25), 8);
+      const soft50CandMax = Math.min(Math.floor(baseS / 50), 4);
+      const woodCandMax = Math.min(Math.floor(baseW / 100), 4);
+  
+      // 아무것도 안 하는 경우 먼저
+      best = evaluateSmall(baseW, baseS, baseT, baseA, basePowder, { ...plan });
+  
+      // 튼튼 -> 목재 보정
+      for (let extraT2W = 0; extraT2W <= sturdyCandMax; extraT2W++) {
+        let w1 = baseW + extraT2W * 50;
+        let t1 = baseT - extraT2W * 5;
+        if (t1 < 0) continue;
+  
+        // 부드러운 -> 목재 보정
+        for (let extraS2W = 0; extraS2W <= soft25CandMax; extraS2W++) {
+          let w2 = w1 + extraS2W * 50;
+          let s2 = baseS - extraS2W * 25;
+          if (s2 < 0) continue;
+  
+          // 부드러운 -> 가루 보정
+          for (let extraS2P = 0; extraS2P <= soft50CandMax; extraS2P++) {
+            let s3 = s2 - extraS2P * 50;
+            let p3 = basePowder + extraS2P * 80;
+            if (s3 < 0) continue;
+  
+            // 목재 -> 가루 보정
+            for (let extraW2P = 0; extraW2P <= woodCandMax; extraW2P++) {
+              let w4 = w2 - extraW2P * 100;
+              let p4 = p3 + extraW2P * 80;
+              if (w4 < 0) continue;
+  
+              const candidate = evaluateSmall(
+                w4, s3, t1, baseA, p4,
+                {
+                  sturdyToWood: plan.sturdyToWood + extraT2W,
+                  softToWood: plan.softToWood + extraS2W,
+                  woodToPowder: plan.woodToPowder + extraW2P,
+                  softToPowder: plan.softToPowder + extraS2P,
+                  powderToSoft: 0,
+                  powderToSturdy: 0,
+                  powderToAbidos: 0
+                }
+              );
+  
+              if (!best || candidate.revenue > best.revenue) {
+                best = candidate;
               }
-            );
-
-            if (!best || candidate.revenue > best.revenue) {
-              best = candidate;
             }
           }
         }
       }
+  
+      return best;
     }
-
-    return best;
-  }
-
-  function calculate() {
-    const original = {
-      wood: num("wood"),
-      soft: num("soft"),
-      sturdy: num("sturdy"),
-      abidos: num("abidos")
-    };
-
-    const prices = {
-      wood: num("priceWood"),
-      soft: num("priceSoft"),
-      sturdy: num("priceSturdy"),
-      abidos: num("priceAbidos")
-    };
-
-    const baseline = directSaleRevenue(
-      original.wood,
-      original.soft,
-      original.sturdy,
-      original.abidos,
-      prices
-    );
-
-    const best = solveFastOptimized(original, prices);
-
-    renderResult(original, prices, baseline, best);
-  }
-
-  function renderResult(init, prices, baseline, best) {
-    const diff = best.revenue - baseline.revenue;
-    const diffClass = diff > 0 ? "success" : (diff < 0 ? "danger" : "warning");
-
-    const planRows = [
-      ["튼튼한 목재 → 목재", `${best.plan.sturdyToWood}회`, `튼튼한 목재 ${best.plan.sturdyToWood * 5}개 → 목재 ${best.plan.sturdyToWood * 50}개`],
-      ["부드러운 목재 → 목재", `${best.plan.softToWood}회`, `부드러운 목재 ${best.plan.softToWood * 25}개 → 목재 ${best.plan.softToWood * 50}개`],
-      ["목재 → 벌목의 가루", `${best.plan.woodToPowder}회`, `목재 ${best.plan.woodToPowder * 100}개 → 가루 ${best.plan.woodToPowder * 80}개`],
-      ["부드러운 목재 → 벌목의 가루", `${best.plan.softToPowder}회`, `부드러운 목재 ${best.plan.softToPowder * 50}개 → 가루 ${best.plan.softToPowder * 80}개`],
-      ["가루 → 부드러운 목재", `${best.plan.powderToSoft}회`, `가루 ${best.plan.powderToSoft * 100}개 → 부드러운 목재 ${best.plan.powderToSoft * 50}개`],
-      ["가루 → 튼튼한 목재", `${best.plan.powderToSturdy}회`, `가루 ${best.plan.powderToSturdy * 100}개 → 튼튼한 목재 ${best.plan.powderToSturdy * 10}개`],
-      ["가루 → 아비도스 목재", `${best.plan.powderToAbidos}회`, `가루 ${best.plan.powderToAbidos * 100}개 → 아비도스 목재 ${best.plan.powderToAbidos * 10}개`]
-    ];
-
-    const html = `
-      <div class="card">
-        <h2>계산 결과</h2>
-
-        <div class="summary">
-          <div class="summary-box">
-            <div class="label">교환 없이 바로 판매</div>
-            <div class="value">${fmt(baseline.revenue)}</div>
-          </div>
-
-          <div class="summary-box">
-            <div class="label">최적 교환 후 판매</div>
-            <div class="value">${fmt(best.revenue)}</div>
-          </div>
-
-          <div class="summary-box">
-            <div class="label">교환으로 추가 이득</div>
-            <div class="value ${diffClass}">
-              ${diff >= 0 ? "+" : ""}${fmt(diff)}
+  
+    function calculate() {
+      const original = {
+        wood: num("wood"),
+        soft: num("soft"),
+        sturdy: num("sturdy"),
+        abidos: num("abidos")
+      };
+  
+      const prices = {
+        wood: num("priceWood"),
+        soft: num("priceSoft"),
+        sturdy: num("priceSturdy"),
+        abidos: num("priceAbidos")
+      };
+  
+      const baseline = directSaleRevenue(
+        original.wood,
+        original.soft,
+        original.sturdy,
+        original.abidos,
+        prices
+      );
+  
+      const best = solveFastOptimized(original, prices);
+  
+      renderResult(original, prices, baseline, best);
+    }
+  
+    function renderResult(init, prices, baseline, best) {
+      const diff = best.revenue - baseline.revenue;
+      const diffClass = diff > 0 ? "success" : (diff < 0 ? "danger" : "warning");
+  
+      const planRows = [
+        ["튼튼한 목재 → 목재", `${best.plan.sturdyToWood}회`, `튼튼한 목재 ${best.plan.sturdyToWood * 5}개 → 목재 ${best.plan.sturdyToWood * 50}개`],
+        ["부드러운 목재 → 목재", `${best.plan.softToWood}회`, `부드러운 목재 ${best.plan.softToWood * 25}개 → 목재 ${best.plan.softToWood * 50}개`],
+        ["목재 → 벌목의 가루", `${best.plan.woodToPowder}회`, `목재 ${best.plan.woodToPowder * 100}개 → 가루 ${best.plan.woodToPowder * 80}개`],
+        ["부드러운 목재 → 벌목의 가루", `${best.plan.softToPowder}회`, `부드러운 목재 ${best.plan.softToPowder * 50}개 → 가루 ${best.plan.softToPowder * 80}개`],
+        ["가루 → 부드러운 목재", `${best.plan.powderToSoft}회`, `가루 ${best.plan.powderToSoft * 100}개 → 부드러운 목재 ${best.plan.powderToSoft * 50}개`],
+        ["가루 → 튼튼한 목재", `${best.plan.powderToSturdy}회`, `가루 ${best.plan.powderToSturdy * 100}개 → 튼튼한 목재 ${best.plan.powderToSturdy * 10}개`],
+        ["가루 → 아비도스 목재", `${best.plan.powderToAbidos}회`, `가루 ${best.plan.powderToAbidos * 100}개 → 아비도스 목재 ${best.plan.powderToAbidos * 10}개`]
+      ];
+  
+      const html = `
+        <div class="card">
+          <h2>계산 결과</h2>
+  
+          <div class="summary">
+            <div class="summary-box">
+              <div class="label">교환 없이 바로 판매</div>
+              <div class="value">${fmt(baseline.revenue)}</div>
+            </div>
+  
+            <div class="summary-box">
+              <div class="label">최적 교환 후 판매</div>
+              <div class="value">${fmt(best.revenue)}</div>
+            </div>
+  
+            <div class="summary-box">
+              <div class="label">교환으로 추가 이득</div>
+              <div class="value ${diffClass}">
+                ${diff >= 0 ? "+" : ""}${fmt(diff)}
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="section-title">최적 판매 방식</div>
-        <table>
-          <thead>
-            <tr>
-              <th>자원</th>
-              <th>판매 수량</th>
-              <th>100개당 가격</th>
-              <th>판매 금액</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>목재</td>
-              <td>${fmt(best.sell.wood)}개</td>
-              <td>${fmt(prices.wood)}</td>
-              <td>${fmt((best.sell.wood / 100) * prices.wood)}</td>
-            </tr>
-            <tr>
-              <td>부드러운 목재</td>
-              <td>${fmt(best.sell.soft)}개</td>
-              <td>${fmt(prices.soft)}</td>
-              <td>${fmt((best.sell.soft / 100) * prices.soft)}</td>
-            </tr>
-            <tr>
-              <td>튼튼한 목재</td>
-              <td>${fmt(best.sell.sturdy)}개</td>
-              <td>${fmt(prices.sturdy)}</td>
-              <td>${fmt((best.sell.sturdy / 100) * prices.sturdy)}</td>
-            </tr>
-            <tr>
-              <td>아비도스 목재</td>
-              <td>${fmt(best.sell.abidos)}개</td>
-              <td>${fmt(prices.abidos)}</td>
-              <td>${fmt((best.sell.abidos / 100) * prices.abidos)}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="section-title">계산된 교환 내역</div>
-        <table>
-          <thead>
-            <tr>
-              <th>교환 종류</th>
-              <th>횟수</th>
-              <th>상세</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${planRows.map(row => `
+  
+          <div class="section-title">최적 판매 방식</div>
+          <table>
+            <thead>
               <tr>
-                <td>${row[0]}</td>
-                <td>${row[1]}</td>
-                <td>${row[2]}</td>
+                <th>자원</th>
+                <th>판매 수량</th>
+                <th>100개당 가격</th>
+                <th>판매 금액</th>
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
-
-        <div class="section-title">교환 없이 바로 팔았을 때</div>
-        <table>
-          <thead>
-            <tr>
-              <th>자원</th>
-              <th>판매 수량</th>
-              <th>남는 수량</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>목재</td>
-              <td>${fmt(baseline.sellWood)}개</td>
-              <td>${fmt(baseline.leftWood)}개</td>
-            </tr>
-            <tr>
-              <td>부드러운 목재</td>
-              <td>${fmt(baseline.sellSoft)}개</td>
-              <td>${fmt(baseline.leftSoft)}개</td>
-            </tr>
-            <tr>
-              <td>튼튼한 목재</td>
-              <td>${fmt(baseline.sellSturdy)}개</td>
-              <td>${fmt(baseline.leftSturdy)}개</td>
-            </tr>
-            <tr>
-              <td>아비도스 목재</td>
-              <td>${fmt(baseline.sellAbidos)}개</td>
-              <td>${fmt(baseline.leftAbidos)}개</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="section-title">최적 교환 후 남는 자원</div>
-        <table>
-          <thead>
-            <tr>
-              <th>자원</th>
-              <th>남는 수량</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>목재</td><td>${fmt(best.remain.wood)}개</td></tr>
-            <tr><td>부드러운 목재</td><td>${fmt(best.remain.soft)}개</td></tr>
-            <tr><td>튼튼한 목재</td><td>${fmt(best.remain.sturdy)}개</td></tr>
-            <tr><td>아비도스 목재</td><td>${fmt(best.remain.abidos)}개</td></tr>
-            <tr><td>벌목의 가루</td><td>${fmt(best.remain.powder)}개</td></tr>
-          </tbody>
-        </table>
-
-        <div class="note">
-          고속 계산 모드가 적용되었습니다.  
-          대량 수량은 bulk 방식으로 빠르게 처리하고, 판매 경계 근처만 추가 보정합니다.
+            </thead>
+            <tbody>
+              <tr>
+                <td>목재</td>
+                <td>${fmt(best.sell.wood)}개</td>
+                <td>${fmt(prices.wood)}</td>
+                <td>${fmt((best.sell.wood / 100) * prices.wood)}</td>
+              </tr>
+              <tr>
+                <td>부드러운 목재</td>
+                <td>${fmt(best.sell.soft)}개</td>
+                <td>${fmt(prices.soft)}</td>
+                <td>${fmt((best.sell.soft / 100) * prices.soft)}</td>
+              </tr>
+              <tr>
+                <td>튼튼한 목재</td>
+                <td>${fmt(best.sell.sturdy)}개</td>
+                <td>${fmt(prices.sturdy)}</td>
+                <td>${fmt((best.sell.sturdy / 100) * prices.sturdy)}</td>
+              </tr>
+              <tr>
+                <td>아비도스 목재</td>
+                <td>${fmt(best.sell.abidos)}개</td>
+                <td>${fmt(prices.abidos)}</td>
+                <td>${fmt((best.sell.abidos / 100) * prices.abidos)}</td>
+              </tr>
+            </tbody>
+          </table>
+  
+          <div class="section-title">계산된 교환 내역</div>
+          <table>
+            <thead>
+              <tr>
+                <th>교환 종류</th>
+                <th>횟수</th>
+                <th>상세</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planRows.map(row => `
+                <tr>
+                  <td>${row[0]}</td>
+                  <td>${row[1]}</td>
+                  <td>${row[2]}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+  
+          <div class="section-title">교환 없이 바로 팔았을 때</div>
+          <table>
+            <thead>
+              <tr>
+                <th>자원</th>
+                <th>판매 수량</th>
+                <th>남는 수량</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>목재</td>
+                <td>${fmt(baseline.sellWood)}개</td>
+                <td>${fmt(baseline.leftWood)}개</td>
+              </tr>
+              <tr>
+                <td>부드러운 목재</td>
+                <td>${fmt(baseline.sellSoft)}개</td>
+                <td>${fmt(baseline.leftSoft)}개</td>
+              </tr>
+              <tr>
+                <td>튼튼한 목재</td>
+                <td>${fmt(baseline.sellSturdy)}개</td>
+                <td>${fmt(baseline.leftSturdy)}개</td>
+              </tr>
+              <tr>
+                <td>아비도스 목재</td>
+                <td>${fmt(baseline.sellAbidos)}개</td>
+                <td>${fmt(baseline.leftAbidos)}개</td>
+              </tr>
+            </tbody>
+          </table>
+  
+          <div class="section-title">최적 교환 후 남는 자원</div>
+          <table>
+            <thead>
+              <tr>
+                <th>자원</th>
+                <th>남는 수량</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>목재</td><td>${fmt(best.remain.wood)}개</td></tr>
+              <tr><td>부드러운 목재</td><td>${fmt(best.remain.soft)}개</td></tr>
+              <tr><td>튼튼한 목재</td><td>${fmt(best.remain.sturdy)}개</td></tr>
+              <tr><td>아비도스 목재</td><td>${fmt(best.remain.abidos)}개</td></tr>
+              <tr><td>벌목의 가루</td><td>${fmt(best.remain.powder)}개</td></tr>
+            </tbody>
+          </table>
+  
+          <div class="note">
+            고속 계산 모드가 적용되었습니다.  
+            대량 수량은 bulk 방식으로 빠르게 처리하고, 판매 경계 근처만 추가 보정합니다.
+          </div>
         </div>
-      </div>
-    `;
-
-    document.getElementById("resultArea").innerHTML = html;
-  }
-</script>
+      `;
+  
+      document.getElementById("resultArea").innerHTML = html;
+    }
+  </script>
 </body>
 </html>
